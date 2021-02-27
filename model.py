@@ -43,8 +43,8 @@ def generate_muliple_inputs(passages: list, questions: list, max_len: int) -> [n
     return [input_ids_array, token_type_ids_array, attention_mask_array]
 
 
-def get_data() -> pd.DataFrame:
-    with open('labels.csv', 'r') as f:
+def get_data(path: str) -> pd.DataFrame:
+    with open(path, 'r') as f:
         df = pd.read_csv(f, nrows=6246)
     return df
 
@@ -55,7 +55,7 @@ def train_model(data: pd.DataFrame, train_size: int, max_len: int) -> tf.keras.M
     labels = list(data["comprehension binary"])
     
     # Create model
-    mod3 = create_model(max_len, 5)
+    mod3 = create_model(max_len)
     # Compile model
     mod3.compile(optimizer=keras.optimizers.Adam(learning_rate=0.0001),  # Optimizer
     # Loss function to minimize
@@ -63,7 +63,7 @@ def train_model(data: pd.DataFrame, train_size: int, max_len: int) -> tf.keras.M
     # Tokenize inputs
     inputs = generate_muliple_inputs(passages[:train_size], questions[:train_size], max_len) # save last 1000 examples
     # Fit model to inputs
-    history = mod3.fit(inputs, np.array(labels[:train_size]), batch_size=1, epochs=5)
+    history = mod3.fit(inputs, np.array(labels[:train_size]), batch_size=1, epochs=2)
 
     return mod3
 
@@ -100,10 +100,10 @@ def test_model(model: tf.keras.Model, data: pd.DataFrame, train_size: int, test_
 
 
 def main():
-    data = get_data()
-    train_size = 1200
-    test_size = 100
-    max_len = 1500
+    data = get_data('labels_with_stackx.csv')
+    train_size = 32
+    test_size = 8
+    max_len = 1024
     model = train_model(data, train_size, max_len)
     test_model(model, data, train_size, test_size, max_len)
 

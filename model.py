@@ -5,7 +5,34 @@ from tensorflow import keras
 import transformers
 import numpy as np
 import pandas as pd
+from sklearn.utils import shuffle
 from transformers import AutoTokenizer, TFXLNetModel, TFAutoModel, TFXLNetLMHeadModel, TFXLNetForSequenceClassification
+
+
+TRAINING_BATCH_SIZE = 2
+TRAINING_EPOCHS = 3
+
+CSV_PATH = 'labels_with_stackx.csv'
+MAX_LEN = 1024
+
+
+def generate_muliple_inputs(passages: list, questions: list, max_len: int) -> [np.array, np.array, np.array]:
+    nentries = len(passages)
+    tokenizer = AutoTokenizer.from_pretrained('xlnet-base-cased', model_max_length=max_len, truncation=True)
+    input_ids_array = np.zeros((nentries, max_len), dtype=int)
+    token_type_ids_array = np.zeros((nentries, max_len), dtype=int)
+    attention_mask_array = np.zeros((nentries, max_len), dtype=int)
+
+    for i in range(nentries):
+        ids = tokenizer(passages[i], questions[i], return_tensors='np', padding='max_length', truncation=True)
+        input_ids_array[i] = ids['input_ids']
+        token_type_ids_array[i] = ids['token_type_ids']
+        attention_mask_array[i] = ids['attention_mask']
+
+    return (input_ids_array, token_type_ids_array, attention_mask_array)
+    
+def get_data(csv_path):
+    return pd.read_csv(csv_path).head(200)
 
 
 def create_model(max_len: int) -> tf.keras.Model:
@@ -26,56 +53,26 @@ def create_model(max_len: int) -> tf.keras.Model:
     
     return model
 
-
-def generate_muliple_inputs(passages: list, questions: list, max_len: int) -> [np.array, np.array, np.array]:
-    nentries = len(passages)
-    tokenizer = AutoTokenizer.from_pretrained('xlnet-base-cased', model_max_length=max_len, truncation=True)
-    input_ids_array = np.zeros((nentries, max_len))
-    token_type_ids_array = np.zeros((nentries, max_len))
-    attention_mask_array = np.zeros((nentries, max_len))
-
-    for i in range(nentries):
-        ids = tokenizer(passages[i], questions[i], return_tensors='np', padding='max_length', truncation=True)
-        input_ids_array[i] = ids['input_ids']
-        token_type_ids_array[i] = ids['token_type_ids']
-        attention_mask_array[i] = ids['attention_mask']
-
-    return [input_ids_array, token_type_ids_array, attention_mask_array]
-
-
-def get_data() -> pd.DataFrame:
-    with open('labels.csv', 'r') as f:
-        df = pd.read_csv(f, nrows=6246)
-    return df
-
-
-def train_model(data: pd.DataFrame, train_size: int, max_len: int) -> tf.keras.Model:
-    passages = list(data["passage"])
-    questions = list(data["question"])
-    labels = list(data["comprehension binary"])
+def train_model(train_features, train_labels, max_len: int) -> tf.keras.Model:
     
     # Create model
-    mod3 = create_model(max_len, 5)
+    mod3 = create_model(max_len)
     # Compile model
     mod3.compile(optimizer=keras.optimizers.Adam(learning_rate=0.0001),  # Optimizer
     # Loss function to minimize
     loss=keras.losses.BinaryCrossentropy())
-    # Tokenize inputs
-    inputs = generate_muliple_inputs(passages[:train_size], questions[:train_size], max_len) # save last 1000 examples
     # Fit model to inputs
-    history = mod3.fit(inputs, np.array(labels[:train_size]), batch_size=1, epochs=5)
+
+    history = mod3.fit(train_features, train_labels, batch_size=TRAINING_BATCH_SIZE, epochs=TRAINING_EPOCHS)
 
     return mod3
 
-def test_model(model: tf.keras.Model, data: pd.DataFrame, train_size: int, test_size: int, max_len: int):
-    passages = list(data["passage"])
-    questions = list(data["question"])
-    labels = list(data["comprehension binary"])
+def test_model(model: tf.keras.Model, test_features, test_labels):
     
-    # Test model on new inputs (first test_size examples after training examples)
-    test_inputs = generate_muliple_inputs(passages[train_size:train_size+test_size], questions[train_size:train_size+test_size], max_len)
-    test_outputs = np.rint(model.predict(test_inputs, batch_size=1))
-    test_labels = np.array(labels[train_size:train_size+test_size]).reshape((test_size, 1))
+    test_outputs = np.rint(model.predict(test_features, batch_size=1))
+    print(test_outputs.shape)
+    print(test_labels.shape)
+    exit()
     
     true_negatives, true_positives, false_negatives, false_positives = 0, 0, 0, 0
     for i in range(test_size):
@@ -98,14 +95,39 @@ def test_model(model: tf.keras.Model, data: pd.DataFrame, train_size: int, test_
     print(f"True positives: {true_positives}")
     print(f"F1 score: {f1score}")
 
+def get_train_and_test(csv_path, max_len, train_size, test_size):
+    data = get_data(csv_path)
+    nentries = len(data["passage"])
+    passages = list(data["passage"])
+    questions = list(data["question"])
+    labels = np.array(list(data["comprehension binary"]))
+    labels = np.reshape(labels, (labels.shape[0], 1))
+
+    # Tokenize the inputs
+    input_ids_array, token_type_ids_array, attention_mask_array = generate_muliple_inputs(passages, questions, max_len)
+    
+    # Shuffle the inputs
+    input_ids_array, token_type_ids_array, attention_mask_array, labels = shuffle(input_ids_array, token_type_ids_array, attention_mask_array, labels)
+
+    # Get train and test. They're random due to shuffling the entire dataset
+    train_features = (input_ids_array[0:train_size], token_type_ids_array[0:train_size], attention_mask_array[0:train_size])
+    train_labels = labels[0:train_size]
+
+    test_features = (input_ids_array[train_size:train_size+test_size], token_type_ids_array[train_size:train_size+test_size], attention_mask_array[train_size:train_size+test_size])
+    test_labels = labels[train_size:train_size+test_size]
+
+    return train_features, train_labels, test_features, test_labels
+
 
 def main():
-    data = get_data()
-    train_size = 1200
-    test_size = 100
-    max_len = 1500
-    model = train_model(data, train_size, max_len)
-    test_model(model, data, train_size, test_size, max_len)
+    train_size = 128
+    test_size = 32
+    max_len = MAX_LEN
+
+    train_features, train_labels, test_features, test_labels = get_train_and_test(CSV_PATH, max_len, train_size, test_size)
+
+    model = train_model(train_features, train_labels, max_len)
+    test_model(model, test_features, test_labels)
 
 if __name__ == "__main__":
     main()

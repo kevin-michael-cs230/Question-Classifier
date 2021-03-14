@@ -3,3 +3,5 @@ my_data/
 my_passages/
 .ipynb_checkpoints/
 model_checkpoints/
+__pycache__/
+processed_datasets/

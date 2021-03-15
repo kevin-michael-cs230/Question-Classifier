@@ -50,7 +50,7 @@ def tokenize_dataframe(data: pd.DataFrame) -> pd.DataFrame:
         data[col] = data[col].apply(lambda cell: np.array(cell))
     return data
 
-def get_features(df: pd.DataFrame) -> List[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def get_features(df: pd.DataFrame) -> List[np.ndarray]:
     """ Given a tokenized dataframe, extract the features as a list of numpy arrays
 
     Args:
@@ -182,7 +182,7 @@ def get_balanced_dataset(data: pd.DataFrame, label_col: str, random_state = None
     else:
         return groups.apply(lambda x: x.sample(num_labels_per_group)).reset_index(drop=True)
 
-def kfold_split(features: List[np.ndarray, np.ndarray, np.ndarray, np.ndarray], labels: np.ndarray, num_folds: int) -> list:
+def kfold_split(features: List[np.ndarray], labels: np.ndarray, num_folds: int) -> list:
     """ Create a k-fold set of train and test folds
 
     Args:
@@ -243,7 +243,7 @@ def get_balance(labels: np.ndarray) -> dict:
 def get_subset(ftrs: list, start: int, stop: int) -> list:
     return [ftrs[0][start:stop], ftrs[1][start:stop], ftrs[2][start:stop], ftrs[3][start:stop]]
 
-def split_datasets(data: pd.DataFrame, train_frac: float, dev_frac: floast) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def split_datasets(data: pd.DataFrame, train_frac: float, dev_frac: float) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Given a shuffled dataset and split fractions, split the dataset into train, dev and test sets 
 
     Args:

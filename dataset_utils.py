@@ -257,8 +257,8 @@ def split_datasets(data: pd.DataFrame, train_frac: float, dev_frac: float) -> Tu
 
     # Get train, test, dev splits
     num_entries = len(data)
-    train_cutoff = int(num_entries * train_ratio)
-    dev_cutoff = train_cutoff + int(num_entries * dev_ratio)
+    train_cutoff = int(num_entries * train_frac)
+    dev_cutoff = train_cutoff + int(num_entries * dev_frac)
 
     train_set = data[:train_cutoff]
     dev_set = data[train_cutoff:dev_cutoff]

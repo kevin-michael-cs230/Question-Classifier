@@ -106,7 +106,7 @@ def preprocess_data(data: pd.DataFrame) -> pd.DataFrame:
     data = data.loc[(data['understandable'] == 1)]
 
     # Sort the data
-    data = data.sort_values(by='passage')
+    data = data.sort_values(by='passage').reset_index(drop=True)
 
     return data
 
@@ -266,6 +266,35 @@ def split_datasets(data: pd.DataFrame, train_frac: float, dev_frac: float) -> Tu
     
     return train_set, dev_set, test_set
 
+def validate_dataset(train_features: list, train_labels: np.ndarray, dataframe: pd.DataFrame) -> dict:
+    """ Validates that train_features properly lines up with train_labels
+
+    Args:
+        train_features List[np.ndarray, np.ndarray, np.ndarray, np.ndarray]: the features
+        train_labels (np.ndarray): the labels
+        dataframe (pd.DataFrame): the pandas dataframe from where the dataset orginated
+
+    Returns:
+        tuple: a dictionary of the number of matches and misses
+    """
+
+    matches = 0
+    misses = 0
+
+    for i in range(len(train_features[0])):
+        tokens = train_features[0][i]
+        label = int(train_labels[i])
+        text = tokenizer.decode(tokens)
+        decoded_quest = text.split('<sep>')[1].strip()
+        # Check that there's a matching question. Sometimes the decoding isn't perfect, so 
+        # we need to remove those
+        if (comprehension['question'] == decoded_quest).any():
+            if ((comprehension['question'] == decoded_quest) & (comprehension['comprehension_binary'] == label)).any():
+                matches += 1
+            else:
+                misses += 1
+    
+    return {'matches': matches, 'misses': misses}
 
 
 

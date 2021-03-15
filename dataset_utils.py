@@ -158,7 +158,7 @@ def get_balance(labels: np.ndarray) -> dict:
     """
     unique, counts = np.unique(labels, return_counts=True)
     balance = dict(zip(unique, counts))
-    balance['percent_pos'] = balance[0] / (balance[0] + balance[1])
+    balance['percent_pos'] = balance[1] / (balance[0] + balance[1])
     return balance
 
 def get_subset(ftrs: list, start: int, stop: int) -> list:

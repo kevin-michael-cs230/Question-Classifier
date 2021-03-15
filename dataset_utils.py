@@ -150,6 +150,44 @@ def kfold_split(features: list, labels: np.array, num_folds: int) -> list:
                     'test_labels': test_labels})
 
     return folds
+
+def get_balance(labels: np.ndarray) -> dict:
+    """
+    Get stats about the balance of positive and negative labels
+
+    """
+    unique, counts = np.unique(labels, return_counts=True)
+    balance = dict(zip(unique, counts))
+    balance['percent_pos'] = balance[0] / (balance[0] + balance[1])
+    return balance
+
+def get_subset(ftrs: list, start: int, stop: int) -> list:
+    return [ftrs[0][start:stop], ftrs[1][start:stop], ftrs[2][start:stop], ftrs[3][start:stop]]
+
+def split_datasets(data: pd.DataFrame, train_ratio, dev_ratio):
+    """
+    data:
+        dataframe of that has already been tokenized and shuffled
+
+
+    """
+
+    # Get train, test, dev splits
+    num_entries = len(data)
+    train_cutoff = int(num_entries * train_ratio)
+    dev_cutoff = train_cutoff + int(num_entries * dev_ratio)
+
+    train_set = data[:train_cutoff]
+    dev_set = data[train_cutoff:dev_cutoff]
+    test_set = data[dev_cutoff:]
+    
+    return train_set, dev_set, test_set
+
+
+
+
+
+
         
 
     

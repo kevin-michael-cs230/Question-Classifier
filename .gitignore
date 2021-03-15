@@ -5,3 +5,4 @@ my_passages/
 model_checkpoints/
 __pycache__/
 processed_datasets/
+saved_model_weights/

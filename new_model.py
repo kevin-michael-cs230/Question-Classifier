@@ -44,3 +44,21 @@ def create_model_no_stackx(max_len: int, num_sx_features: int) -> tf.keras.Model
         )
 
     return model
+
+def create_model_only_stackx(max_len: int, num_sx_features: int) -> tf.keras.Model:
+    #encoder = TFXLNetForSequenceClassification.from_pretrained('xlnet-base-cased', num_labels=1) #Input is tokenized strings, output is embeddings and logits (logits means pre-sigmoid label)
+    input_ids = layers.Input(shape=(max_len,), dtype=tf.int32, name='input_ids')
+    token_type_ids = layers.Input(shape=(max_len,), dtype=tf.int32, name='token_type_ids')
+    attention_mask = layers.Input(shape=(max_len,), dtype=tf.int32, name='attention_mask')
+    stackx_features = layers.Input(shape=(num_sx_features,), dtype=tf.float32, name='stackx_features') #Leave it here so we don't have to reformat the dataset. But it doesn't connect to anything
+
+    layer1 = layers.Dense(8, activation='relu', name='layer1')(stackx_features)
+    norm = layers.BatchNormalization()(layer1)
+    final = layers.Dense(1, activation='sigmoid', name='final')(norm)
+
+    model = tf.keras.Model(
+            inputs=[input_ids, token_type_ids, attention_mask, stackx_features],
+            outputs=[final], name='classifier'
+        )
+
+    return model

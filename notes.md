@@ -1,3 +1,53 @@
+
+
+# Notes on stackx labels
+
+- Show that method that successfully overfit for encoder alone does not work when stackx included
+- Stackx labels were not effective in helping the model fit the data
+- To evaluate the usefuleness of the stackx labels, created a model that used only the stackx labels (no encoder)
+- Unable to fit the model to the training data.
+    - Tried 300 epochs and could't get accuracy above 50%
+    - Loss is unstable even with very low learning rate.
+        - Setup: Even with all these modifications
+            - Adam with lr = 1e-8, batch sizes of 64
+            - Batch normalization
+            - An 8-node hidden layer
+        - Loss swings significantly between epochs and no consistent trend.
+        - See only_stackx-train.json
+- Thus, decided to ignore the stackx labels during training.
+
+# Notes on interest
+
+## Attempt to overfit
+
+### model_overfit
+
+```python
+TRAIN_RATIO = .6
+DEV_RATIO = .2
+LEARNING_RATE = lr_schedule = tf.keras.optimizers.schedules.ExponentialDecay(1e-5, decay_steps=50, decay_rate=0.9, staircase=True)
+BATCH_SIZE = 3
+EPOCHS = 14
+```
+
+- With 14 epochs, maximum accuracy achieved on epoch 11 (75.77%), and final accuracy was 70.75%
+- Loss decreased consistently for the first few batches, but level at at around batch 7 near 0.6
+- Even though goal was overfit, it good acceptable levels of accuracy on dev set:
+    - Accuracy: 69.18%
+    - F1 Score: 67.36%
+- Overall, it looks like we are underfitting
+
+
+
+        
+
+
+
+
+
+
+
+
 Value of 0.000001 and 2 epochs lead to 58% on training and 54.5% on dev. 
 Further training did not lead to higher accuracy
 

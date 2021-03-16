@@ -140,7 +140,7 @@ def get_interest_dataset(data: pd.DataFrame) -> pd.DataFrame:
     interest = data.loc[(data['interest'] >= 4) | (data['interest'] <= 2)]
 
     # Create binary label
-    interest['interest_binary'] = (interest['interest'] > 3).astype(int)
+    interest.loc[:, 'interest_binary'] = (interest['interest'] > 3).astype(int)
 
     return interest
 
@@ -295,6 +295,23 @@ def validate_dataset(train_features: list, train_labels: np.ndarray, dataframe: 
                 misses += 1
     
     return {'matches': matches, 'misses': misses}
+
+def oversample(data: pd.DataFrame, column: str, value_to_oversample, num_samples: int) -> pd.DataFrame:
+    """ Adds an additional `num_samples` of the value `value_to_oversample` to the column `column`
+    in the dataframe `data`
+
+    Args:
+        data (pd.DataFrame): dataframe to oversample
+        column (str): column the contains the value to oversample
+        value_to_oversample ([type]): the value to oversample
+        num_samples (int): the number of additional samples to produce
+
+    Returns:
+        pd.DataFrame: the dataset with the new samples appended.
+    """
+    groups = data.groupby(column, as_index=False)
+    oversample = groups.get_group(value_to_oversample).sample(num_samples, replace=True)
+    return pd.concat([data, oversample]).reset_index(drop=True)
 
 
 

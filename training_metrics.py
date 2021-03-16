@@ -149,7 +149,7 @@ class TrainMetrics(keras.callbacks.Callback):
         batches_per_epoch = num_batches // self.epochs
 
         epoch_batchnums = list(range(1, num_batches + 1, batches_per_epoch))
-        epoch_labels = [f'Epoch {i} start' for i in range(1, self.epochs + 1)]
+        epoch_labels = [f'Epoch {i}' for i in range(1, self.epochs + 1)]
 
         fig = plt.figure(figsize=(7, 4))
         ax = fig.add_axes([0, 0, 1, 1]) # main axes
@@ -159,6 +159,15 @@ class TrainMetrics(keras.callbacks.Callback):
         ax.set_ylabel(yaxis_label)
         ax.set_xticks(epoch_batchnums)
         ax.set_xticklabels(epoch_labels)
+
+        # In case there are a lot of epochs, prevents labels from colliding
+        if len(epoch_labels) > 5:
+            divider = len(epoch_labels) // 5
+            i = 0
+            for label in ax.get_xticklabels():
+                if i % divider != 0:
+                    label.set_visible(False)
+                i += 1
         if save_image:
             fig.savefig(f'{self.model_name}-{metric_name}.png')
         plt.show()
